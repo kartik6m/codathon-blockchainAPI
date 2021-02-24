@@ -1,9 +1,10 @@
 let mongoose = require("mongoose");
 
-let BlockChainModel = require("./model");
+let BlockChainModel = require("./block-model");
+
 
 //Connect to database
-mongoose.connect("mongodb://localhost:27017/voting_data", {useNewUrlParser:true}, (err) => {
+mongoose.connect(process.argv[4], {useNewUrlParser:true}, (err) => {
     if (err)
         return console.log("Cannot connect to DB");
     console.log("Database is Connected");
