@@ -4,6 +4,10 @@
   "description": "Basic Nodejs/MongoDB Implementation of BlockChain ",
   "main": "main.js",
   "scripts": {
+    "start": "nodemon --watch src -e js src/api/blockchain_api.js",
+    "node1": "nodemon --watch src -e js src/api/blockchain_api.js 3000 http://localhost:3000 mongodb://localhost:27017/voting_data",
+    "node2": "nodemon --watch src -e js src/api/blockchain_api.js 3001 http://localhost:3001 mongodb://localhost:27018/voting_data",
+    "all-instances": "concurrently \"npm run node1\" \"npm run node2\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -12,8 +16,13 @@
   "author": "Islem Penywis",
   "license": "MIT ",
   "dependencies": {
+    "body-parser": "^1.19.0",
     "chalk": "^2.4.1",
+    "concurrently": "^6.0.0",
+    "express": "^4.17.1",
     "mongoose": "^5.2.17",
-    "object-hash": "^1.3.0"
+    "object-hash": "^1.3.0",
+    "request": "^2.88.2",
+    "request-promise": "^4.2.6"
   }
 }
