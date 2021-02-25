@@ -180,6 +180,10 @@ class BlockChain {
             return {candidate: candidateIn, party: partyIn};
     }
 
+    setChainFromDB = (chainIn)=> {
+        this.chain = chainIn;
+    }
+
     //get the latest block from chain
     lastBlock() {
         return this

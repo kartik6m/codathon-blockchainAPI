@@ -151,7 +151,9 @@ database.onConnect(async ()=>{
         return res.json({nodeURL: blockChain.nodeURL, networkNodes: blockChain.networkNodes});
     });
 
-    app.get('/check-validity',(req,res)=>{
+    app.get('/check-validity',async (req,res)=>{
+        let dbChain = await blockChainModel.find({},{_id:0,__v:0});
+        blockChain.setChainFromDB(dbChain);
         if(!blockChain.isChainValid()){
             reqs = [];
             const requestOptions = {
@@ -198,7 +200,19 @@ database.onConnect(async ()=>{
                 }
             });
 
-            if(!longestChain ||(longestChain && !blockChain.isChainValid(longestChain)))
+            if(longestChain && !blockChain.isChainValid(longestChain))
+            {
+                newChains.forEach(newChain=>{
+                    if(newChain.chain.length >= maxLength)
+                    {
+                        maxLength = newChain.chain.length;
+                        longestChain = newChain.chain;
+                        curr_votes = newChain.curr_votes;
+                    }
+                });
+            }
+
+            if(!longestChain || (longestChain && !blockChain.isChainValid(longestChain)))
             {
                 return res.json({
                     message: "Chain cannot be replaced: "+blockChain.isChainValid(longestChain),
