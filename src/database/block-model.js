@@ -9,7 +9,7 @@ let BlockChainSchema = new Schema({
     },
     timestamp: {
         required: true,
-        type: Schema.Types.Date,
+        type: Schema.Types.Number,
         default: Date.now()
     },
     votes: {
