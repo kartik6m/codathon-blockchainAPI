@@ -1,11 +1,10 @@
-let hash = require('object-hash');
+let hash = require('./createHash');
 //number of zeros required before hash. More the number, longer it will take to mine the block.
 const difficulty = 3;
 
 let validator = require("./validator");
 
 // let mongoose = require("mongoose");
-
 //get the model of the block to save
 // let blockChainModel = mongoose.model("vote_blocks");
 let blockChainModel = require('./database/block-model')
@@ -30,9 +29,26 @@ class BlockChain {
         }
     }
 
+    printHashes() {
+        for(let i=1;i<this.chain.length;i++)
+        {
+            let currentBlock = this.chain[i];
+            let blockwh = {
+                timestamp: currentBlock.timestamp,
+                votes: currentBlock.votes,
+                index: currentBlock.index,
+                prevHash: currentBlock.prevHash,
+                nonce: currentBlock.nonce
+                // hash: currentBlock.hash
+            };
+            
+            console.log(i,hash(blockwh),hash(currentBlock));
+            console.log(blockwh,currentBlock);
+        }
+    }
     isChainValid(chain = this.chain) {
         //validate the genesis block
-        if(chain[0].prevHash !== '0' || chain[0].nonce!==100 || chain[0].hash!=='Genesis Block' || chain[0].votes.length!==0)
+        if(chain[0].prevHash != '0' || chain[0].nonce!==100 || chain[0].hash!=='Genesis Block' || chain[0].votes.length!==0)
         {
             console.log('Genesis block invalid');
             console.log(chain[0]);
@@ -44,29 +60,12 @@ class BlockChain {
             const currentBlock = chain[i];
             const prevBlock = chain[i-1];
 
-            const blockWithoutHash = {
-                timestamp: currentBlock.timestamp,
-                votes: currentBlock.votes,
-                index: currentBlock.index,
-                prevHash: currentBlock.prevHash,
-                nonce: currentBlock.nonce
-            };
+            const currentHash = hash(currentBlock);
             
-            const currentHash = hash(blockWithoutHash);
-            
-            console.log('currentblock:'+(currentBlock));
-            // console.log('block without hash: '+JSON.stringify(blockWithoutHash));
-            console.log('block without hash: '+(blockWithoutHash));
-            console.log(hash({
-                index: currentBlock.index,
-                timestamp: currentBlock.timestamp,
-                votes: currentBlock.votes,
-                prevHash: currentBlock.prevHash,
-                nonce: currentBlock.nonce
-            }));
             //check if the stored hash and calculated hash are same, and both solve the hash puzzle
-            if(currentHash !== currentBlock.hash && !validator.validProof(blockWithoutHash)){
+            if(currentHash !== currentBlock.hash && !validator.validProof(currentBlock)){
                 console.log('Block no. '+i+' invalid');
+                console.log(currentHash,currentBlock.hash,validator.validProof(currentBlock))
                 return false;
             }
 
@@ -125,6 +124,14 @@ class BlockChain {
         //save the block only if it satisfies the hash puzzle
         if (validator.proofOfWork(block).toString().substring(0,difficulty) === Array(difficulty+1).join('0')) {
             block.hash = hash(block);
+            console.log('hash after mining: ',block.hash);
+            console.log('hash of original: ', hash({
+                timestamp:block.timestamp,
+                votes:block.votes,
+                index: block.index,
+                prevHash:block.prevHash,
+                nonce:block.nonce
+            }));
             //Add it to the instance Save it on the DB Console Success
             this.saveBlock(block);
             return block;
