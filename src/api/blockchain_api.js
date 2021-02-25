@@ -16,6 +16,7 @@ database.onConnect(async ()=>{
     // console.log("Chain : ", blockChain.chain);
 
     app.get('/chain',(req,res)=>{
+        blockChain.printHashes();
         return res.send(blockChain);
     });
 
@@ -148,6 +149,28 @@ database.onConnect(async ()=>{
 
     app.get('/nodes', (req,res)=>{
         return res.json({nodeURL: blockChain.nodeURL, networkNodes: blockChain.networkNodes});
+    });
+
+    app.get('/check-validity',(req,res)=>{
+        if(!blockChain.isChainValid()){
+            reqs = [];
+            const requestOptions = {
+                uri: blockChain.nodeURL + '/consensus',
+                method: 'GET',
+                json: true
+            };
+            reqs.push(reqPromise(requestOptions));
+            Promise.all(reqs).then(data=>{
+                return res.json(data);
+            });
+        }
+        else {
+            return res.json({
+                message: "Chain valid, not updated.",
+                chain: blockChain.chain
+            });
+        }
+        
     });
 
     app.get('/consensus',(req,res)=>{
