@@ -7,7 +7,8 @@
     "start": "nodemon --watch src -e js src/api/blockchain_api.js",
     "node1": "nodemon --watch src -e js src/api/blockchain_api.js 3000 http://localhost:3000 mongodb://localhost:27017/voting_data",
     "node2": "nodemon --watch src -e js src/api/blockchain_api.js 3001 http://localhost:3001 mongodb://localhost:27018/voting_data",
-    "all-instances": "concurrently \"npm run node1\" \"npm run node2\"",
+    "node3": "nodemon --watch src -e js src/api/blockchain_api.js 3002 http://localhost:3002 mongodb://localhost:27019/voting_data",
+    "all-instances": "concurrently \"npm run node1\" \"npm run node2\" \"npm run node3\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
