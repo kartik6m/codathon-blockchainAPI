@@ -17,7 +17,6 @@ let chalk = require("chalk");
 class BlockChain {
 
     constructor(initialChain=[], initialNetworkNodes=[]) {
-
         //Set the chain to be in it's previous state
         // this.chain = this.getInitialChain();
         this.chain = initialChain;
@@ -31,17 +30,62 @@ class BlockChain {
         }
     }
 
-    // getInitialChain = async ()=>{
-    //     let initChain = await blockChainModel.find({index:1});
-    //     return initChain;
-    // }
+    isChainValid(chain = this.chain) {
+        //validate the genesis block
+        if(chain[0].prevHash !== '0' || chain[0].nonce!==100 || chain[0].hash!=='Genesis Block' || chain[0].votes.length!==0)
+        {
+            console.log('Genesis block invalid');
+            console.log(chain[0]);
+            return false;
+        }
+        //for all blocks in chain,
+        for(let i=1;i<chain.length;i++)
+        {
+            const currentBlock = chain[i];
+            const prevBlock = chain[i-1];
+
+            const blockWithoutHash = {
+                timestamp: currentBlock.timestamp,
+                votes: currentBlock.votes,
+                index: currentBlock.index,
+                prevHash: currentBlock.prevHash,
+                nonce: currentBlock.nonce
+            };
+            
+            const currentHash = hash(blockWithoutHash);
+            
+            console.log('currentblock:'+(currentBlock));
+            // console.log('block without hash: '+JSON.stringify(blockWithoutHash));
+            console.log('block without hash: '+(blockWithoutHash));
+            console.log(hash({
+                index: currentBlock.index,
+                timestamp: currentBlock.timestamp,
+                votes: currentBlock.votes,
+                prevHash: currentBlock.prevHash,
+                nonce: currentBlock.nonce
+            }));
+            //check if the stored hash and calculated hash are same, and both solve the hash puzzle
+            if(currentHash !== currentBlock.hash && !validator.validProof(blockWithoutHash)){
+                console.log('Block no. '+i+' invalid');
+                return false;
+            }
+
+            //check if prevHash of current block is equal to the hash of the previous block
+            if(prevBlock.hash !== currentBlock.prevHash){
+                console.log('Link invalid for block '+i);
+                return false;
+            }
+        }
+        return true;
+    }
+
     createGenesisBlock() {
         let block = {
             index: 1,
             timestamp: Date.now(),
             votes: [],
             prevHash: 0,
-            nonce: 0,
+            nonce: 100,
             hash: 'Genesis Block'
         };
         this.saveBlock(block);
@@ -102,6 +146,25 @@ class BlockChain {
             return block;
     }
 
+    replaceWithLongestChain(longestChain) {
+        var i=0;
+        for(i=0; i<this.chain.length;i++)
+        {
+            let newValues = {$set : longestChain[i] };
+            let query = {index: (i+1)}
+            blockChainModel.updateOne(query, newValues, (err,res)=>{
+                if(err) {
+                    return console.log('Error updating entry '+(i+1) + ': '+err);
+                }
+                console.log('Update successful');
+            });
+            this.chain[i] = longestChain[i];
+        }
+        for(;i<longestChain.length;i++)
+        {
+            this.saveBlock(longestChain[i]);
+        }
+    }
     //add new vote to the buffer
     addNewVote(candidateIn,partyIn) {
         this

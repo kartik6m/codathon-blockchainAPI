@@ -11,7 +11,7 @@ app.use(bodyParser.json())
 const BlockChain = require('./../blockChain')
 
 database.onConnect(async ()=>{
-    let blockChain = new BlockChain(await blockChainModel.find({}),await NodeModel.find({}));
+    let blockChain = new BlockChain(await blockChainModel.find({},{_id:0,__v:0}),await NodeModel.find({},{_id:0,__v:0}));
     let port = process.argv[2];
     // console.log("Chain : ", blockChain.chain);
 
@@ -148,6 +148,50 @@ database.onConnect(async ()=>{
 
     app.get('/nodes', (req,res)=>{
         return res.json({nodeURL: blockChain.nodeURL, networkNodes: blockChain.networkNodes});
+    });
+
+    app.get('/consensus',(req,res)=>{
+        const requests = [];
+        blockChain.networkNodes.forEach(nodeURL=>{
+            const requestOptions = {
+                uri : nodeURL.url + '/chain',
+                method: 'GET',
+                json: true
+            };
+            requests.push(reqPromise(requestOptions));
+        });
+        Promise.all(requests).then(newChains=>{
+            const currentLength = blockChain.chain.length;
+            let maxLength = currentLength;
+            let longestChain = blockChain.chain;
+            let curr_votes = null;
+
+            newChains.forEach(newChain=>{
+                if(newChain.chain.length > maxLength)
+                {
+                    maxLength = newChain.chain.length;
+                    longestChain = newChain.chain;
+                    curr_votes = newChain.curr_votes;
+                }
+            });
+
+            if(!longestChain ||(longestChain && !blockChain.isChainValid(longestChain)))
+            {
+                return res.json({
+                    message: "Chain cannot be replaced: "+blockChain.isChainValid(longestChain),
+                    chain: blockChain.chain
+                });
+            }
+            else if(longestChain && blockChain.isChainValid(longestChain))
+            {
+                blockChain.replaceWithLongestChain(longestChain);
+                blockChain.curr_votes = curr_votes;
+                return res.json({
+                    message: "Chain updated",
+                    chain: longestChain
+                });
+            }
+        })
     });
 
     app.listen(port, ()=>{
