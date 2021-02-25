@@ -1,4 +1,4 @@
-let hash = require('object-hash');
+let hash = require('./createHash');
 
 const difficulty = 3;
 
