@@ -163,7 +163,7 @@ class BlockChain {
                 if(err) {
                     return console.log('Error updating entry '+(i+1) + ': '+err);
                 }
-                console.log('Update successful');
+                // console.log('Update successful');
             });
             this.chain[i] = longestChain[i];
         }

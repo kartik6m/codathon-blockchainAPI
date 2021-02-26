@@ -49,7 +49,7 @@ database.onConnect(async ()=>{
     app.post('/add-block',(req,res)=>{
         const blockIn = req.body.block;
         const lastBlock = blockChain.lastBlock();
-        if(/*lastBlock==null || */(blockIn.prevHash===lastBlock.hash /*&& lastBlock.index+1 === blockIn.index*/))
+        if(blockIn.prevHash===lastBlock.hash && lastBlock.index+1 === blockIn.index)
         {
             blockChain.saveBlock(blockIn);
             return res.json(
@@ -86,7 +86,7 @@ database.onConnect(async ()=>{
         Promise.all(requests).then(data => {
             return res.json(
                 {
-                    message: 'Mining & broadcasting new Block successfully',
+                    message: 'Mined & broadcasted new Block successfully',
                     newBlock: addedBlock
                 }
             );
