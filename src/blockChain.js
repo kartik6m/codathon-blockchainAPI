@@ -1,12 +1,10 @@
 let hash = require('./createHash');
+
 //number of zeros required before hash. More the number, longer it will take to mine the block.
 const difficulty = 3;
 
 let validator = require("./validator");
 
-// let mongoose = require("mongoose");
-//get the model of the block to save
-// let blockChainModel = mongoose.model("vote_blocks");
 let blockChainModel = require('./database/block-model')
 let NodeModel = require('./database/networkNode-model')
 
@@ -15,52 +13,53 @@ let chalk = require("chalk");
 
 class BlockChain {
 
-    constructor(initialChain=[], initialNetworkNodes=[]) {
+    constructor(initialChain = [], initialNetworkNodes = []) {
         //Set the chain to be in it's previous state
-        // this.chain = this.getInitialChain();
         this.chain = initialChain;
         //Buffer to store incoming votes
         this.curr_votes = [];
         this.nodeURL = process.argv[3];
         this.networkNodes = initialNetworkNodes;
-        
-        if(this.chain.length===0) {
+
+        if (this.chain.length === 0) {
             this.createGenesisBlock();
         }
     }
 
+    //Function takes a chain as input, and checks if that chain is valid.
+    //For a chain to be valid, for each block, calculated hash should match the stored hash,
+    //and prevHash of every block should be equal to hash of it's previous block.
     isChainValid(chain = this.chain) {
         //validate the genesis block
-        if(chain[0].prevHash != '0' || chain[0].nonce!==100 || chain[0].hash!=='Genesis Block' || chain[0].votes.length!==0)
-        {
+        if (chain[0].prevHash != '0' || chain[0].nonce !== 100 || chain[0].hash !== 'Genesis Block' || chain[0].votes.length !== 0) {
             console.log('Genesis block invalid');
             console.log(chain[0]);
             return false;
         }
         //for all blocks in chain,
-        for(let i=1;i<chain.length;i++)
-        {
+        for (let i = 1; i < chain.length; i++) {
             const currentBlock = chain[i];
-            const prevBlock = chain[i-1];
+            const prevBlock = chain[i - 1];
 
             const currentHash = hash(currentBlock);
-            
+
             //check if the stored hash and calculated hash are same, and both solve the hash puzzle
-            if(currentHash !== currentBlock.hash && !validator.validProof(currentBlock)){
-                console.log('Block no. '+i+' invalid');
-                console.log(currentHash,currentBlock.hash,validator.validProof(currentBlock))
+            if (currentHash !== currentBlock.hash && !validator.validProof(currentBlock)) {
+                console.log('Block no. ' + i + ' invalid');
+                console.log(currentHash, currentBlock.hash, validator.validProof(currentBlock))
                 return false;
             }
 
             //check if prevHash of current block is equal to the hash of the previous block
-            if(prevBlock.hash !== currentBlock.prevHash){
-                console.log('Link invalid for block '+i);
+            if (prevBlock.hash !== currentBlock.prevHash) {
+                console.log('Link invalid for block ' + i);
                 return false;
             }
         }
         return true;
     }
 
+    //Creates the first block of the chain. It does not contain any data.
     createGenesisBlock() {
         let block = {
             index: 1,
@@ -73,43 +72,40 @@ class BlockChain {
         this.saveBlock(block);
     }
 
+    //Iterates over the whole chain, and calculates the summary of election i.e. vote counts for each candidate and each team.
     generateSummary(chain = this.chain) {
-        var teamSummary={};
-        var candidateSummary={};
-        for(let i=0;i<chain.length;i++)
-        {
-            for(let j=0;j<chain[i].votes.length;j++)
-            {
+        var teamSummary = {};
+        var candidateSummary = {};
+        for (let i = 0; i < chain.length; i++) {
+            for (let j = 0; j < chain[i].votes.length; j++) {
                 let vote = chain[i].votes[j];
-                if(teamSummary[vote.team]){
+                if (teamSummary[vote.team]) {
                     teamSummary[vote.team] = teamSummary[vote.team] + 1;
                 }
-                else{
+                else {
                     teamSummary[vote.team] = 1;
                 }
-                if(candidateSummary[vote.candidate]){
+                if (candidateSummary[vote.candidate]) {
                     candidateSummary[vote.candidate] = candidateSummary[vote.candidate] + 1;
                 }
-                else{
+                else {
                     candidateSummary[vote.candidate] = 1;
                 }
             }
         }
-        return {candidate: candidateSummary, team: teamSummary};
+        return { candidate: candidateSummary, team: teamSummary };
     }
+
+    //Adds the URL of a new node to the addressbook of this node.
     addNewNode(nodeURL) {
-        let node = (nodeURL.url?nodeURL:{url:nodeURL})
-        // let node = {
-            // url: nodeURL
-        // };
-        if(this.networkNodes.indexOf(node)===-1 && this.nodeURL!==node.url)
-        {
+        let node = (nodeURL.url ? nodeURL : { url: nodeURL })
+        if (this.networkNodes.indexOf(node) === -1 && this.nodeURL !== node.url) {
             this.networkNodes.push(node);
             let newNode = new NodeModel(node);
-            newNode.save((err)=>{
-                if(err){
-                    return console.log(chalk.red("Cannot add node: "+err.message));
-                console.log(chalk.green('Node added successfully'));
+            newNode.save((err) => {
+                if (err) {
+                    return console.log(chalk.red("Cannot add node: " + err.message));
+                    console.log(chalk.green('Node added successfully'));
                 }
             });
             return true;
@@ -129,15 +125,15 @@ class BlockChain {
             nonce: 0
         };
         //save the block only if it satisfies the hash puzzle
-        if (validator.proofOfWork(block).toString().substring(0,difficulty) === Array(difficulty+1).join('0')) {
+        if (validator.proofOfWork(block).toString().substring(0, difficulty) === Array(difficulty + 1).join('0')) {
             block.hash = hash(block);
-            console.log('hash after mining: ',block.hash);
+            console.log('hash after mining: ', block.hash);
             console.log('hash of original: ', hash({
-                timestamp:block.timestamp,
-                votes:block.votes,
+                timestamp: block.timestamp,
+                votes: block.votes,
                 index: block.index,
-                prevHash:block.prevHash,
-                nonce:block.nonce
+                prevHash: block.prevHash,
+                nonce: block.nonce
             }));
             //Add it to the instance Save it on the DB Console Success
             this.saveBlock(block);
@@ -145,49 +141,50 @@ class BlockChain {
         }
     }
 
+    //Takes a block (object) as input, and saves it to the database.
     saveBlock(block) {
         let newBlock = new blockChainModel(block);
-            newBlock.save((err) => {
-                if (err)
-                    return console.log(chalk.red("Cannot save Block to DB ", err.message));
-                console.log(chalk.green("Block Saved on the DB"));
-            });
-            //Add to Chain
-            this
-                .chain
-                .push(block);
-            this.curr_votes = [];
-            return block;
+        newBlock.save((err) => {
+            if (err)
+                return console.log(chalk.red("Cannot save Block to DB ", err.message));
+            console.log(chalk.green("Block Saved on the DB"));
+        });
+        //Add to Chain
+        this
+            .chain
+            .push(block);
+        this.curr_votes = [];
+        return block;
     }
 
+    //Replaces the chain at this node with the longest chain. Longest chain is determined by the consensus algorithm.
     replaceWithLongestChain(longestChain) {
-        var i=0;
-        for(i=0; i<this.chain.length;i++)
-        {
-            let newValues = {$set : longestChain[i] };
-            let query = {index: (i+1)}
-            blockChainModel.updateOne(query, newValues, (err,res)=>{
-                if(err) {
-                    return console.log('Error updating entry '+(i+1) + ': '+err);
+        var i = 0;
+        for (i = 0; i < this.chain.length; i++) {
+            let newValues = { $set: longestChain[i] };
+            let query = { index: (i + 1) }
+            blockChainModel.updateOne(query, newValues, (err, res) => {
+                if (err) {
+                    return console.log('Error updating entry ' + (i + 1) + ': ' + err);
                 }
-                // console.log('Update successful');
             });
             this.chain[i] = longestChain[i];
         }
-        for(;i<longestChain.length;i++)
-        {
+        for (; i < longestChain.length; i++) {
             this.saveBlock(longestChain[i]);
         }
     }
+
     //add new vote to the buffer
-    addNewVote(candidateIn,teamIn) {
+    addNewVote(candidateIn, teamIn) {
         this
             .curr_votes
-            .push({candidate: candidateIn, team: teamIn});
-            return {candidate: candidateIn, team: teamIn};
+            .push({ candidate: candidateIn, team: teamIn });
+        return { candidate: candidateIn, team: teamIn };
     }
 
-    setChainFromDB = (chainIn)=> {
+    //updates the local variable of chain with the chain present at the database.
+    setChainFromDB = (chainIn) => {
         this.chain = chainIn;
     }
 
