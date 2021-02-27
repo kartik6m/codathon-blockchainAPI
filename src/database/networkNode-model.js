@@ -1,7 +1,7 @@
 let mongoose = require("mongoose");
 let Schema = mongoose.Schema;
 
-//Create the Schema for a block
+//Create the Schema for address of node in the network
 let NodeSchema = new Schema({
     url: {
         required: true,
