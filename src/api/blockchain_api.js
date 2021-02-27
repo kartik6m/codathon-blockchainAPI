@@ -3,10 +3,11 @@ const app=express()
 let database = require('./../database')
 let blockChainModel = require('../database/block-model')
 let NodeModel = require('../database/networkNode-model')
+let CandidateModel = require('../database/candidate')
+let UserModel = require('../database/user')
 const reqPromise = require('request-promise');
 
 const bodyParser = require('body-parser')
-app.use(bodyParser.json())
 
 const BlockChain = require('./../blockChain')
 
@@ -15,20 +16,160 @@ database.onConnect(async ()=>{
     let port = process.argv[2];
     // console.log("Chain : ", blockChain.chain);
 
+    // app.set('view engine','ejs');
+    app.use(bodyParser.json());
+    app.use(bodyParser.urlencoded({ extended: true }));
+
+    app.get('/',(req,res)=>{
+        res.redirect('/user-dashboard');
+    });
+
     app.get('/chain',(req,res)=>{
-        blockChain.printHashes();
+        // blockChain.printHashes();
         return res.send(blockChain);
+        // return res.render('<h1><%=nodeURL%></h1>',blockChain);
+    });
+
+    app.get('/user-dashboard',(req,res)=>{
+        return res.sendFile('D:/siemens/basic_blockchain/template/index.html');
+    });
+
+    app.get('/register/broadcast',(req,res)=>{
+        res.sendFile('D:/siemens/basic_blockchain/template/register.html');
+    });
+
+    app.post('/register',(req,res)=>{
+        let entry = {
+            email: req.body.email,
+            role: req.body.role,
+            password: req.body.password
+        };
+        let newEntry = new UserModel(entry);
+        newEntry.save((err)=>{
+            if(err){
+                return console.log('User not added: '+err);
+            }
+            console.log('User registered successfully');
+        });
+    });
+
+    app.post('/register/broadcast',(req,res)=>{
+        let entry = {
+            email: req.body.email,
+            role: req.body.role,
+            password: req.body.password
+        };
+        let newEntry = new UserModel(entry);
+        newEntry.save((err)=>{
+            if(err){
+                return console.log('User not added: '+err);
+            }
+            console.log('User registered successfully');
+        });
+        const registerNodes = [];
+        blockChain.networkNodes.forEach(networkNode => {
+            const requestOptions = {
+                uri: networkNode.url + '/register',
+                method: 'POST',
+                body: entry,
+                json: true
+            }
+            registerNodes.push(reqPromise(requestOptions));
+        });
+    
+        Promise.all(registerNodes).then((data)=>{
+            return res.send('<div>User registered successfully</div><a href=\'/\'>Home</a>');
+        });
+    });
+
+    app.get('/add-candidate/broadcast',(req,res)=>{
+        res.sendFile('D:/siemens/basic_blockchain/template/addCandidate.html');
+    });
+
+    app.post('/add-candidate',(req,res)=>{
+        let entry = {
+            candidate: req.body.candidate,
+            team: req.body.team
+        };
+        CandidateModel.findOne({$or:[{candidate: req.body.candidate }, {team:req.body.team}]}).then(candidate=>{
+            if(candidate){
+                return res.json({ name: "This candidate/candidate from this party already added" });
+            }
+            else {
+                let newEntry = new CandidateModel(entry);
+                newEntry.save((err)=>{
+                    if(err){
+                        console.log(port+': Candidate not added: '+err);
+                        return res.send('Candidate not added');
+                    }
+                    console.log(port+': Candidate added successfully');
+                    return res.send('Candidate added successfully');
+                });
+            }
+        });
+    });
+
+    app.post('/add-candidate/broadcast',(req,res)=>{
+        let entry = {
+            candidate: req.body.candidate,
+            team: req.body.team
+        };
+        let newEntry = new CandidateModel(entry);
+        newEntry.save((err)=>{
+            if(err){
+                return console.log(port+':Candidate not added: '+err);
+            }
+            console.log(port+': Candidate added successfully');
+        });
+        const registerNodes = [];
+        blockChain.networkNodes.forEach(networkNode => {
+            const requestOptions = {
+                uri: networkNode.url + '/add-candidate',
+                method: 'POST',
+                body: entry,
+                json: true
+            }
+            registerNodes.push(reqPromise(requestOptions));
+        });
+        console.log(port+': before promise.all');
+        Promise.all(registerNodes).then((data)=>{
+            console.log(port+': candidate broadcasted, '+data);
+            return res.send('<div>Candidate added successfully</div><a href=\'/\'>Home</a>');
+        }).catch(err=>{
+            console.log(port+': Candidate not broadcasted - '+err);
+            return res.send('<div>Candidate cannot be added</div><a href=\'/\'>Home</a>');
+        });
+    });
+
+    app.get('/test',(req,res)=>{
+        res.send('<div>Vote registered successfully</div><a href=\'/\'>Home</a>');
+    });
+
+    app.get('/add-vote/broadcast',async (req,res)=>{
+        let candidates = await CandidateModel.find({},{_id:0,__v:0});
+        let code = '<div class=\"voting-form\"><form id="vote" action=\"/add-vote/broadcast\" method=\"post\" onSubmit=\"event.preventDefault(); validateMyForm();\"><p>Please cast your vote:</p>';
+        for(let i=0;i<candidates.length;i++){
+            code = code + '<input type=\"radio\" id=\"candidate'+1+'\" name="candidate" value=\"'+candidates[i].candidate+'\"><label for=\"vote\">'+candidates[i].candidate+'</label><br>';
+        }
+        code = code + '<input type="submit" value="Vote">';
+        code = code + '</form></div><script type=\"text/javascript\">var form = document.getElementById(\'vote\');function validateMyForm(){form.submit()}</script>';
+        res.send(code);
     });
 
     app.post('/add-vote',(req,res)=>{
-        blockChain.addNewVote(req.body.candidate, req.body.party);
-        return res.json('you voted for '+req.body.candidate+', '+req.body.party);
-        // res.json('Vote will be registered.')
+        blockChain.addNewVote(req.body.candidate, req.body.team);
+        // return res.json('you voted for '+req.body.candidate+', '+req.body.team);
+        return res.json(port+': Vote is registered.')
     });
 
-    app.post('/add-vote/broadcast',(req,res)=>{
-        const vote = blockChain.addNewVote(req.body.candidate, req.body.party);
-        // res.json('you voted for '+req.body.candidate+', '+req.body.party);
+    app.post('/add-vote/broadcast',async (req,res)=>{
+        // console.log(req.body);
+        let cand = req.body.candidate;
+        
+        cd = await CandidateModel.findOne({candidate: cand})
+        let team = cd.team;
+        // console.log(cd);
+        const vote = blockChain.addNewVote(cand, team);
 
         const registerNodes = [];
         blockChain.networkNodes.forEach(networkNode => {
@@ -42,7 +183,7 @@ database.onConnect(async ()=>{
         });
     
         Promise.all(registerNodes).then((data)=>{
-            return res.json({message: "vote registered and broadcasted."});
+            return res.send('<div>Vote registered successfully</div><a href=\'/\'>Home</a>');
         });
     });
 
