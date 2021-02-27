@@ -9,34 +9,36 @@
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
   <title>Blockchain based voting</title>
 </head>
+
 <body>
   <div class='container'>
     <div class="jumbotron">
       <h2>Blockchain based voting</h2>
     </div>
-<div class="login-form">
-    <form id="login" action="/login" method="post" onSubmit="event.preventDefault(); validateMyForm();">
+    <div class="login-form">
+      <form id="login" action="/login" method="post" onSubmit="event.preventDefault(); validateMyForm();">
         <div class="form-group">
-            <input type="text" id="mail" name="email" placeholder="Email" class="form-control">
+          <input type="text" id="mail" name="email" placeholder="Email" class="form-control">
         </div>
         <div class="form-group">
-            <input type="password" id="password" name="password" placeholder="Password" class="form-control">
+          <input type="password" id="password" name="password" placeholder="Password" class="form-control">
         </div>
         <button type="submit" value="login" class="btn btn-primary">Log in</button>
-    </form>
-</div>
+      </form>
+    </div>
 
-<script type="text/javascript">
-    var form = document.getElementById('login');
-    function validateMyForm(){
+    <script type="text/javascript">
+      var form = document.getElementById('login');
+      function validateMyForm() {
         form.submit()
-    }
-</script>
-<div id="root"></div>
-  <!-- jQuery library -->
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+      }
+    </script>
+    <div id="root"></div>
+    <!-- jQuery library -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
-  <!-- Latest compiled JavaScript -->
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <!-- Latest compiled JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
 </body>
+
 </html>
