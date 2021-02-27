@@ -6,32 +6,117 @@ let NodeModel = require('../database/networkNode-model')
 let CandidateModel = require('../database/candidate')
 let UserModel = require('../database/user')
 const reqPromise = require('request-promise');
-
+const session = require('express-session')
 const bodyParser = require('body-parser')
 
 const BlockChain = require('./../blockChain')
+const { isValidObjectId } = require('mongoose')
 
 database.onConnect(async ()=>{
     let blockChain = new BlockChain(await blockChainModel.find({},{_id:0,__v:0}),await NodeModel.find({},{_id:0,__v:0}));
     let port = process.argv[2];
     // console.log("Chain : ", blockChain.chain);
-
-    // app.set('view engine','ejs');
+    const templateBegin = '<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\"><meta name=\"theme-color\" content=\"#000000\"><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css\"><title>Blockchain based voting</title></head><body><div class=\'container\'><div class=\"jumbotron\"><h2>Blockchain based voting</h2></div>';    // app.set('view engine','ejs');
+    const templateEnd = '<div id=\"root\"></div><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js\"></script><script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js\"></script></body></html>';
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({ extended: true }));
+    app.use(session({
+        secret: 'work hard',
+        resave: true,
+        saveUninitialized: false,
+    }));
 
     app.get('/',(req,res)=>{
-        res.redirect('/user-dashboard');
+        if(req.session)
+        {
+            console.log(req.session.userID,req.session.email);
+            UserModel.findOne({email:req.session.email}).then(user=>{
+                if(user.role === 'admin') {
+                    return res.redirect('/admin-dashboard');
+                }
+                else {
+                    return res.redirect('/user-dashboard');
+                }
+            }).catch(err=>{
+                return res.send(templateBegin+'<div class=\'row\'><a href=/login class=\'btn btn-primary btn-block\' role=\'button\'>Log in</a></div><br></br><div class=\'row\'><a href=/register/broadcast class=\'btn btn-success btn-block\' role=\'button\'>Register</a></div>'+templateEnd);
+            })
+        }
+        
+    });
+
+    app.get('/login',(req,res)=>{
+        res.sendFile('D:/siemens/basic_blockchain/template/login.html');
+    });
+
+    app.post('/login',(req,res)=>{
+        UserModel.findOne({email:req.body.email}).then(user=>{
+            if(!user){
+                return res.status(400).send(templateBegin+'<div>User not found</div><a href=/register/broadcast>Register here</a>'+templateEnd);
+                // res.send(templateBegin+'<a href=/register/broadcast>Register here</a>'+templateEnd);
+            }
+            if(req.body.password===user.password){
+                req.session.userID = user._id;
+                req.session.email = user.email;
+                if(user.role === 'admin') return res.redirect('/admin-dashboard');
+                else return res.redirect('/user-dashboard');
+            }
+            else{
+                res.status(400).send(templateBegin+'<div>Password incorrect</div><a href=/login>Retry</a>'+templateEnd);
+            }
+        })
+    });
+
+    app.get('/logout',(req,res)=>{
+        if (req.session) {
+            // delete session object
+            req.session.destroy(function (err) {
+                if (err) {
+                    return next(err);
+                } else {
+                return res.redirect('/');
+                }
+            });
+        }
+    });
+
+    app.get('/summary',(req,res)=>{
+        let code = templateBegin;
+        let summary = blockChain.generateSummary();
+        console.log(summary);
+        code=code+'<table class="table table-striped"><thead><tr><th width=500>Candidate</th><th>Votes</th></tr></thead><tbody>';
+        for(cand in summary.candidate){
+            code = code + '<tr><td>'+cand+'</td><td>'+summary.candidate[cand]+'</td>';
+        }
+        code=code+'</tbody></table>';
+
+        code=code+'<table class="table table-striped"><thead><tr><th width=500>Team</th><th>Votes</th></tr></thead><tbody>';
+        for(cand in summary.team){
+            code = code + '<tr><td>'+cand+'</td><td>'+summary.team[cand]+'</td>';
+        }
+        code=code+'</tbody></table>';
+        code = code + '<a href=/>Home</a>';
+        code=code+templateEnd;
+        return res.send(code);
     });
 
     app.get('/chain',(req,res)=>{
-        // blockChain.printHashes();
-        return res.send(blockChain);
+        let code = templateBegin;
+        code=code+'<table class="table table-striped"><thead><tr><th>Index</th><th>Votes</th><th>Previous Hash</th><th>Hash</th></tr></thead><tbody>';
+        blockChain.chain.forEach(block=>{
+            code = code + '<tr><td>'+block.index+'</td><td>'+block.votes+'</td><td>'+block.prevHash+'</td><td>'+block.hash+'</td></tr>';
+        });
+        code=code+'</tbody></table>';
+        code=code+templateEnd;
+        return res.send(code);
         // return res.render('<h1><%=nodeURL%></h1>',blockChain);
     });
 
     app.get('/user-dashboard',(req,res)=>{
-        return res.sendFile('D:/siemens/basic_blockchain/template/index.html');
+        return res.sendFile('D:/siemens/basic_blockchain/template/index-user.html');
+    });
+
+    app.get('/admin-dashboard',(req,res)=>{
+        return res.sendFile('D:/siemens/basic_blockchain/template/index-admin.html');
     });
 
     app.get('/register/broadcast',(req,res)=>{
@@ -47,9 +132,11 @@ database.onConnect(async ()=>{
         let newEntry = new UserModel(entry);
         newEntry.save((err)=>{
             if(err){
-                return console.log('User not added: '+err);
+                console.log(port+': User not added: '+err);
+                return res.send('User not added: '+err);
             }
-            console.log('User registered successfully');
+            console.log(port+': User registered successfully');
+            return res.send('User registered successfully');
         });
     });
 
@@ -64,7 +151,7 @@ database.onConnect(async ()=>{
             if(err){
                 return console.log('User not added: '+err);
             }
-            console.log('User registered successfully');
+            console.log(port+': User registered successfully');
         });
         const registerNodes = [];
         blockChain.networkNodes.forEach(networkNode => {
@@ -78,7 +165,11 @@ database.onConnect(async ()=>{
         });
     
         Promise.all(registerNodes).then((data)=>{
-            return res.send('<div>User registered successfully</div><a href=\'/\'>Home</a>');
+            req.session.userID = newEntry._id;
+            req.session.email = newEntry.email;
+            if(newEntry.role === 'admin') return res.redirect('/admin-dashboard');
+            else return res.redirect('/user-dashboard');
+            // return res.send('<div>User registered successfully</div><a href=\'/\'>Home</a>');
         });
     });
 
@@ -142,18 +233,30 @@ database.onConnect(async ()=>{
     });
 
     app.get('/test',(req,res)=>{
-        res.send('<div>Vote registered successfully</div><a href=\'/\'>Home</a>');
+        res.sendFile('D:/siemens/basic_blockchain/template/vote.html');
     });
 
     app.get('/add-vote/broadcast',async (req,res)=>{
         let candidates = await CandidateModel.find({},{_id:0,__v:0});
-        let code = '<div class=\"voting-form\"><form id="vote" action=\"/add-vote/broadcast\" method=\"post\" onSubmit=\"event.preventDefault(); validateMyForm();\"><p>Please cast your vote:</p>';
-        for(let i=0;i<candidates.length;i++){
-            code = code + '<input type=\"radio\" id=\"candidate'+1+'\" name="candidate" value=\"'+candidates[i].candidate+'\"><label for=\"vote\">'+candidates[i].candidate+'</label><br>';
-        }
-        code = code + '<input type="submit" value="Vote">';
-        code = code + '</form></div><script type=\"text/javascript\">var form = document.getElementById(\'vote\');function validateMyForm(){form.submit()}</script>';
-        res.send(code);
+        UserModel.findOne({email:req.session.email}).then(user=>{
+            if(user){
+                if(user.voted){
+                    return res.send(templateBegin+'<div>You have already voted.</div><a href=/>Home</a>'+templateEnd);
+                }
+                else{
+                    let code = templateBegin;
+                    code = code + '<div class=\"voting-form\"><form id="vote" action=\"/add-vote/broadcast\" method=\"post\" onSubmit=\"event.preventDefault(); validateMyForm();\"><p>Please cast your vote:</p>';
+                    for(let i=0;i<candidates.length;i++){
+                        code = code + '<input type=\"radio\" id=\"candidate'+1+'\" name="candidate" value=\"'+candidates[i].candidate+'\"><label for=\"vote\">'+candidates[i].candidate+'</label><br>';
+                    }
+                    code = code + '<input type="submit" value="Vote">';
+                    code = code + '</form></div><script type=\"text/javascript\">var form = document.getElementById(\'vote\');function validateMyForm(){form.submit()}</script>';
+                    code = code + templateEnd;
+                    res.send(code);
+                }
+            }
+        })
+        
     });
 
     app.post('/add-vote',(req,res)=>{
@@ -183,7 +286,19 @@ database.onConnect(async ()=>{
         });
     
         Promise.all(registerNodes).then((data)=>{
-            return res.send('<div>Vote registered successfully</div><a href=\'/\'>Home</a>');
+            reqs = [];
+            const requestOptions = {
+                uri: blockChain.nodeURL + '/mine',
+                method: 'GET',
+                json: true
+            };
+            reqs.push(reqPromise(requestOptions));
+            Promise.all(reqs).then(data=>{
+                UserModel.updateOne({email:req.session.email},{$set:{voted:true}},err=>{
+                    console.log('Error marking as voted: '+err);
+                });
+                return res.send('<div>Vote registered successfully</div><a href=\'/\'>Home</a>');
+            });
         });
     });
 
@@ -309,7 +424,7 @@ database.onConnect(async ()=>{
         }
         else {
             return res.json({
-                message: "Chain valid, not updated.",
+                message: "Chain valid.",
                 chain: blockChain.chain
             });
         }
