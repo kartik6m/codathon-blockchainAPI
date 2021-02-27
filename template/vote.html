@@ -1,0 +1,19 @@
+<div class="voting-form">
+    <form id="vote" action="/add-vote/broadcast" method="post" onSubmit="event.preventDefault(); validateMyForm();">
+        <p>Please cast your vote:</p>
+        <input type="radio" id="candidate1" name="candidate" value="candidate1">
+        <label for="vote">Candidate 1</label><br>
+        <input type="radio" id="candidate2" name="candidate" value="candidate2">
+        <label for="vote">Candidate 2</label><br>
+        <input type="radio" id="candidate3" name="candidate" value="candidate3">
+        <label for="vote">Candidate 3</label><br>
+        <input type="submit" value="Vote">
+    </form>
+</div>
+
+<script type="text/javascript">
+    var form = document.getElementById('vote');
+    function validateMyForm(){
+        form.submit()
+    }
+</script>

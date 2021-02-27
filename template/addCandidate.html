@@ -1,0 +1,19 @@
+<div class="candidate-form">
+    <form id="vote" action="/add-candidate/broadcast" method="post" onSubmit="event.preventDefault(); validateMyForm();">
+        <p>Enter candidate information:</p>
+        <div>
+            <input type="text" id="candidate" name="candidate" placeholder="Candidate Name">
+        </div>
+        <div>
+            <input type="text" id="team" name="team" placeholder="Candidate Team">
+        </div>
+        <input type="submit" value="Add">
+    </form>
+</div>
+
+<script type="text/javascript">
+    var form = document.getElementById('vote');
+    function validateMyForm(){
+        form.submit()
+    }
+</script>	
