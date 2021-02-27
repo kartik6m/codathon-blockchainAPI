@@ -173,11 +173,11 @@ class BlockChain {
         }
     }
     //add new vote to the buffer
-    addNewVote(candidateIn,partyIn) {
+    addNewVote(candidateIn,teamIn) {
         this
             .curr_votes
-            .push({candidate: candidateIn, party: partyIn});
-            return {candidate: candidateIn, party: partyIn};
+            .push({candidate: candidateIn, team: teamIn});
+            return {candidate: candidateIn, team: teamIn};
     }
 
     setChainFromDB = (chainIn)=> {
