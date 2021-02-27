@@ -15,7 +15,7 @@ const { isValidObjectId } = require('mongoose')
 database.onConnect(async ()=>{
     let blockChain = new BlockChain(await blockChainModel.find({},{_id:0,__v:0}),await NodeModel.find({},{_id:0,__v:0}));
     let port = process.argv[2];
-    // console.log("Chain : ", blockChain.chain);
+
     const templateBegin = '<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\"><meta name=\"theme-color\" content=\"#000000\"><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css\"><title>Blockchain based voting</title></head><body><div class=\'container\'><div class=\"jumbotron\"><h2>Blockchain based voting</h2></div>';    // app.set('view engine','ejs');
     const templateEnd = '<div id=\"root\"></div><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js\"></script><script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js\"></script></body></html>';
     app.use(bodyParser.json());
@@ -29,7 +29,7 @@ database.onConnect(async ()=>{
     app.get('/',(req,res)=>{
         if(req.session)
         {
-            console.log(req.session.userID,req.session.email);
+            // console.log(req.session.userID,req.session.email);
             UserModel.findOne({email:req.session.email}).then(user=>{
                 if(user.role === 'admin') {
                     return res.redirect('/admin-dashboard');
@@ -45,7 +45,22 @@ database.onConnect(async ()=>{
     });
 
     app.get('/login',(req,res)=>{
-        res.sendFile('D:/siemens/basic_blockchain/template/login.html');
+        if(req.session.email) {
+            UserModel.findOne({email:req.session.email}).then(user=>{
+                if(user){
+                    if(user.role==='admin'){
+                        return res.redirect('/admin-dashboard');
+                    }
+                    else{
+                        return res.redirect('user-dashboard');
+                    }
+                }
+            }).catch(err=>console.log(err));
+        }
+        else {
+            res.sendFile('D:/siemens/basic_blockchain/template/login.html');
+        }
+        
     });
 
     app.post('/login',(req,res)=>{
@@ -112,11 +127,42 @@ database.onConnect(async ()=>{
     });
 
     app.get('/user-dashboard',(req,res)=>{
-        return res.sendFile('D:/siemens/basic_blockchain/template/index-user.html');
+        if(req.session.email) {
+            UserModel.findOne({email:req.session.email}).then(user=>{
+                if(user){
+                    if(user.role==='admin'){
+                        return res.redirect('/admin-dashboard');
+                    }
+                    else{
+                        return res.sendFile('D:/siemens/basic_blockchain/template/index-user.html');
+                    }
+                }
+            }).catch(err=>console.log(err));
+        }
+        else{
+            return res.redirect('/');
+        }
     });
 
     app.get('/admin-dashboard',(req,res)=>{
-        return res.sendFile('D:/siemens/basic_blockchain/template/index-admin.html');
+        console.log(req.session);
+        if(req.session.email) {
+            UserModel.findOne({email:req.session.email}).then(user=>{
+                if(user){
+                    if(user.role==='voter'){
+                        return res.redirect('/user-dashboard');
+                    }
+                    else{
+                        return res.sendFile('D:/siemens/basic_blockchain/template/index-admin.html');
+                    }
+                }
+            }).catch(err=>console.log(err));
+        }
+        else{
+            console.log('session DNE');
+            return res.redirect('/');
+        }
+        
     });
 
     app.get('/register/broadcast',(req,res)=>{
@@ -174,7 +220,22 @@ database.onConnect(async ()=>{
     });
 
     app.get('/add-candidate/broadcast',(req,res)=>{
-        res.sendFile('D:/siemens/basic_blockchain/template/addCandidate.html');
+        if(req.session.email) {
+            UserModel.findOne({email:req.session.email}).then(user=>{
+                if(user){
+                    if(user.role==='voter'){
+                        return res.redirect('/user-dashboard');
+                    }
+                    else{
+                        res.sendFile('D:/siemens/basic_blockchain/template/addCandidate.html');
+                    }
+                }
+            }).catch(err=>console.log(err));
+        }
+        else{
+            return res.redirect('/');
+        }
+        
     });
 
     app.post('/add-candidate',(req,res)=>{
@@ -230,10 +291,6 @@ database.onConnect(async ()=>{
             console.log(port+': Candidate not broadcasted - '+err);
             return res.send('<div>Candidate cannot be added</div><a href=\'/\'>Home</a>');
         });
-    });
-
-    app.get('/test',(req,res)=>{
-        res.sendFile('D:/siemens/basic_blockchain/template/vote.html');
     });
 
     app.get('/add-vote/broadcast',async (req,res)=>{
@@ -401,10 +458,6 @@ database.onConnect(async ()=>{
                     }
                 );
             });
-    });
-
-    app.get('/nodes', (req,res)=>{
-        return res.json({nodeURL: blockChain.nodeURL, networkNodes: blockChain.networkNodes});
     });
 
     app.get('/check-validity',async (req,res)=>{
