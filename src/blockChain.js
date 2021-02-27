@@ -29,23 +29,6 @@ class BlockChain {
         }
     }
 
-    printHashes() {
-        for(let i=1;i<this.chain.length;i++)
-        {
-            let currentBlock = this.chain[i];
-            let blockwh = {
-                timestamp: currentBlock.timestamp,
-                votes: currentBlock.votes,
-                index: currentBlock.index,
-                prevHash: currentBlock.prevHash,
-                nonce: currentBlock.nonce
-                // hash: currentBlock.hash
-            };
-            
-            console.log(i,hash(blockwh),hash(currentBlock));
-            console.log(blockwh,currentBlock);
-        }
-    }
     isChainValid(chain = this.chain) {
         //validate the genesis block
         if(chain[0].prevHash != '0' || chain[0].nonce!==100 || chain[0].hash!=='Genesis Block' || chain[0].votes.length!==0)
@@ -90,6 +73,30 @@ class BlockChain {
         this.saveBlock(block);
     }
 
+    generateSummary(chain = this.chain) {
+        var teamSummary={};
+        var candidateSummary={};
+        for(let i=0;i<chain.length;i++)
+        {
+            for(let j=0;j<chain[i].votes.length;j++)
+            {
+                let vote = chain[i].votes[j];
+                if(teamSummary[vote.team]){
+                    teamSummary[vote.team] = teamSummary[vote.team] + 1;
+                }
+                else{
+                    teamSummary[vote.team] = 1;
+                }
+                if(candidateSummary[vote.candidate]){
+                    candidateSummary[vote.candidate] = candidateSummary[vote.candidate] + 1;
+                }
+                else{
+                    candidateSummary[vote.candidate] = 1;
+                }
+            }
+        }
+        return {candidate: candidateSummary, team: teamSummary};
+    }
     addNewNode(nodeURL) {
         let node = (nodeURL.url?nodeURL:{url:nodeURL})
         // let node = {
