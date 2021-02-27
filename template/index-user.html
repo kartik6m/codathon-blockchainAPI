@@ -14,31 +14,37 @@
     <div class="jumbotron">
       <h2>Blockchain based voting</h2>
     </div>
-<div class="candidate-form">
-    <form id="vote" action="/add-candidate/broadcast" method="post" onSubmit="event.preventDefault(); validateMyForm();">
-        <p>Enter candidate information:</p>
-        <div>
-            <input type="text" id="candidate" name="candidate" placeholder="Candidate Name">
+    
+    <div class='row'>
+      <div class='col-sm-1'></div>
+      <div class='col-sm-4'>
+        <a href='/add-vote/broadcast'><h3>Cast Vote</h3></a>
+      </div>
+    </div>
+    
+    <div class='row'>
+      <div class='col-sm-1'></div>
+      <div class='col-sm-4'>
+        <a href='/summary'><h3>Election Summary</h3></a>
+      </div>
+    </div>
+    <div class='row'>
+        <div class='col-sm-1'></div>
+        <div class='col-sm-4'>
+          <a href='/logout' class='btn btn-primary' role='button'><h4>Logout</h4></a>
         </div>
-        <div>
-            <input type="text" id="team" name="team" placeholder="Candidate Team">
-        </div>
-        <input type="submit" value="Add">
-    </form>
-</div>
-
-<script type="text/javascript">
-    var form = document.getElementById('vote');
-    function validateMyForm(){
-        form.submit()
-    }
-</script>
-<div id="root"></div>
+      </div>
+    </div>
+  </div>
+  
+  <noscript>
+    You need to enable JavaScript to run this app.
+  </noscript>
+  <div id="root"></div>
   <!-- jQuery library -->
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
   <!-- Latest compiled JavaScript -->
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
 </body>
-
 </html>

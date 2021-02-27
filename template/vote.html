@@ -1,19 +1,46 @@
-<div class="voting-form">
-    <form id="vote" action="/add-vote/broadcast" method="post" onSubmit="event.preventDefault(); validateMyForm();">
-        <p>Please cast your vote:</p>
-        <input type="radio" id="candidate1" name="candidate" value="candidate1">
-        <label for="vote">Candidate 1</label><br>
-        <input type="radio" id="candidate2" name="candidate" value="candidate2">
-        <label for="vote">Candidate 2</label><br>
-        <input type="radio" id="candidate3" name="candidate" value="candidate3">
-        <label for="vote">Candidate 3</label><br>
-        <input type="submit" value="Vote">
-    </form>
-</div>
+<!DOCTYPE html>
+<html lang="en">
 
-<script type="text/javascript">
-    var form = document.getElementById('vote');
-    function validateMyForm(){
-        form.submit()
-    }
-</script>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="theme-color" content="#000000">
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <title>Blockchain based voting</title>
+</head>
+
+<body>
+    <div class='container'>
+        <div class="jumbotron">
+            <h2>Blockchain based voting</h2>
+        </div>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Index</th>
+                    <th>Votes</th>
+                    <th>Previous Hash</th>
+                    <th>Hash</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Block 1</td>
+                    <td>1</td>
+                    <td>candidate1</td>
+                    <td>572r7qy87d890rh</td>
+                    <td>572r7qy87d890rh</td>
+                </tr>
+            </tbody>
+        </table>
+        <div id="root"></div>
+        <!-- jQuery library -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+        <!-- Latest compiled JavaScript -->
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+</body>
+
+</html>
