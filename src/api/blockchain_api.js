@@ -15,8 +15,8 @@ const { isValidObjectId } = require('mongoose')
 database.onConnect(async ()=>{
     let blockChain = new BlockChain(await blockChainModel.find({},{_id:0,__v:0}),await NodeModel.find({},{_id:0,__v:0}));
     let port = process.argv[2];
-
-    const templateBegin = '<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\"><meta name=\"theme-color\" content=\"#000000\"><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css\"><title>Blockchain based voting</title></head><body><div class=\'container\'><div class=\"jumbotron\"><h2>Blockchain based voting</h2></div>';    // app.set('view engine','ejs');
+    const imgUrl = 'https://news.uchicago.edu/sites/default/files/styles/full_width/public/images/2019-07/Mobile%20voting.jpg?itok=oezMDWp-';
+    const templateBegin = '<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\"><meta name=\"theme-color\" content=\"#000000\"><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css\"><title>Blockchain based voting</title></head><body><div class=\'container\'><div class="jumbotron jumbotron-image" style="background-image: url('+imgUrl+');"><h2>Blockchain based e-Voting System</h2></div>';
     const templateEnd = '<div id=\"root\"></div><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js\"></script><script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js\"></script></body></html>';
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({ extended: true }));
@@ -38,7 +38,7 @@ database.onConnect(async ()=>{
                     return res.redirect('/user-dashboard');
                 }
             }).catch(err=>{
-                return res.send(templateBegin+'<div class=\'row\'><a href=/login class=\'btn btn-primary btn-block\' role=\'button\'>Log in</a></div><br></br><div class=\'row\'><a href=/register/broadcast class=\'btn btn-success btn-block\' role=\'button\'>Register</a></div>'+templateEnd);
+                return res.send(templateBegin+'<div><a href=/login class=\'btn btn-primary\' role=\'button\'>Log in</a></div><br></br><div><a href=/register/broadcast class=\'btn btn-success\' role=\'button\'>Register</a></div>'+templateEnd);
             })
         }
         
@@ -98,32 +98,33 @@ database.onConnect(async ()=>{
         let code = templateBegin;
         let summary = blockChain.generateSummary();
         console.log(summary);
-        code=code+'<table class="table table-striped"><thead><tr><th width=500>Candidate</th><th>Votes</th></tr></thead><tbody>';
-        for(cand in summary.candidate){
-            code = code + '<tr><td>'+cand+'</td><td>'+summary.candidate[cand]+'</td>';
+        code=code+'<h4>Summary for the election:</h4>';
+        code=code+'<center><table class="table table-bordered table-hover" style="width:auto"><thead style="background-color:#F0FFF0"><tr><th width=150>Candidate</th><th width=120>Team</th><th width=80>Votes</th></tr></thead><tbody>';
+        for(cand in summary){
+            code = code + '<tr><td>'+cand+'</td><td>'+summary[cand].team+'</td><td>'+summary[cand].votes+'</td>';
         }
-        code=code+'</tbody></table>';
+        code=code+'</tbody></table></center>';
 
-        code=code+'<table class="table table-striped"><thead><tr><th width=500>Team</th><th>Votes</th></tr></thead><tbody>';
-        for(cand in summary.team){
-            code = code + '<tr><td>'+cand+'</td><td>'+summary.team[cand]+'</td>';
-        }
-        code=code+'</tbody></table>';
-        code = code + '<a href=/>Home</a>';
+        // code=code+'<table class="table table-striped"><thead><tr><th width=500>Team</th><th>Votes</th></tr></thead><tbody>';
+        // for(cand in summary.team){
+        //     code = code + '<tr><td>'+cand+'</td><td>'+summary.team[cand]+'</td>';
+        // }
+        // code=code+'</tbody></table>';
+        code = code + '<a href=/ ><h4>Home</h4></a>';
         code=code+templateEnd;
         return res.send(code);
     });
 
     app.get('/chain',(req,res)=>{
-        let code = templateBegin;
-        code=code+'<table class="table table-striped"><thead><tr><th>Index</th><th>Votes</th><th>Previous Hash</th><th>Hash</th></tr></thead><tbody>';
-        blockChain.chain.forEach(block=>{
-            code = code + '<tr><td>'+block.index+'</td><td>'+block.votes+'</td><td>'+block.prevHash+'</td><td>'+block.hash+'</td></tr>';
-        });
-        code=code+'</tbody></table>';
-        code=code+templateEnd;
-        return res.send(code);
-        // return res.render('<h1><%=nodeURL%></h1>',blockChain);
+        // let code = templateBegin;
+        // code=code+'<table class="table table-striped"><thead><tr><th>Index</th><th>Votes</th><th>Previous Hash</th><th>Hash</th></tr></thead><tbody>';
+        // blockChain.chain.forEach(block=>{
+        //     code = code + '<tr><td>'+block.index+'</td><td>'+block.votes+'</td><td>'+block.prevHash+'</td><td>'+block.hash+'</td></tr>';
+        // });
+        // code=code+'</tbody></table>';
+        // code=code+templateEnd;
+        // return res.send(code);
+        return res.send(blockChain);
     });
 
     app.get('/user-dashboard',(req,res)=>{
@@ -266,12 +267,21 @@ database.onConnect(async ()=>{
             candidate: req.body.candidate,
             team: req.body.team
         };
-        let newEntry = new CandidateModel(entry);
-        newEntry.save((err)=>{
-            if(err){
-                return console.log(port+':Candidate not added: '+err);
+        CandidateModel.findOne({candidate:req.body.candidate}).then(candidate=>{
+            if(candidate){
+                return res.send(templateBegin+'<div><h4>This candidate has already been added.</h4></div><a href=\'/\'><h4>Home</h4></a>'+templateEnd);
             }
-            console.log(port+': Candidate added successfully');
+            else {
+                let newEntry = new CandidateModel(entry);
+                newEntry.save((err)=>{
+                    if(err){
+                        console.log(port+': Candidate not added: '+err);
+                        return res.send('Candidate not added');
+                    }
+                    console.log(port+': Candidate added successfully');
+                    return res.send(templateBegin+'<div><h4>Candidate added successfully.</h4></div><a href=\'/\'><h4>Home</h4></a>'+templateEnd);
+                });
+            }
         });
         const registerNodes = [];
         blockChain.networkNodes.forEach(networkNode => {
@@ -286,10 +296,10 @@ database.onConnect(async ()=>{
         console.log(port+': before promise.all');
         Promise.all(registerNodes).then((data)=>{
             console.log(port+': candidate broadcasted, '+data);
-            return res.send('<div>Candidate added successfully</div><a href=\'/\'>Home</a>');
+            return res.send(templateBegin+'<div>Candidate added successfully</div><a href=\'/\'><h4>Home</h4></a>'+templateEnd);
         }).catch(err=>{
             console.log(port+': Candidate not broadcasted - '+err);
-            return res.send('<div>Candidate cannot be added</div><a href=\'/\'>Home</a>');
+            return res.send(templateBegin+'<div>Candidate cannot be added</div><a href=\'/\'><h4>Home</h4></a>'+templateEnd);
         });
     });
 
@@ -298,15 +308,16 @@ database.onConnect(async ()=>{
         UserModel.findOne({email:req.session.email}).then(user=>{
             if(user){
                 if(user.voted){
-                    return res.send(templateBegin+'<div>You have already voted.</div><a href=/>Home</a>'+templateEnd);
+                    return res.send(templateBegin+'<div><h4>You have already voted.</h4></div><a href=/><h4>Home</h4></a>'+templateEnd);
                 }
                 else{
                     let code = templateBegin;
-                    code = code + '<div class=\"voting-form\"><form id="vote" action=\"/add-vote/broadcast\" method=\"post\" onSubmit=\"event.preventDefault(); validateMyForm();\"><p>Please cast your vote:</p>';
+                    code = code + '<div class=\"voting-form\"><form id="vote" action=\"/add-vote/broadcast\" method=\"post\" onSubmit=\"event.preventDefault(); validateMyForm();\"><p><h4>Please cast your vote:</h4></p>';
                     for(let i=0;i<candidates.length;i++){
                         code = code + '<input type=\"radio\" id=\"candidate'+1+'\" name="candidate" value=\"'+candidates[i].candidate+'\"><label for=\"vote\">'+candidates[i].candidate+'</label><br>';
                     }
                     code = code + '<input type="submit" value="Vote">';
+                    code = code + '<a href=/ ><h4>Home</h4></a>';
                     code = code + '</form></div><script type=\"text/javascript\">var form = document.getElementById(\'vote\');function validateMyForm(){form.submit()}</script>';
                     code = code + templateEnd;
                     res.send(code);
@@ -352,9 +363,11 @@ database.onConnect(async ()=>{
             reqs.push(reqPromise(requestOptions));
             Promise.all(reqs).then(data=>{
                 UserModel.updateOne({email:req.session.email},{$set:{voted:true}},err=>{
-                    console.log('Error marking as voted: '+err);
+                    if(err){
+                        console.log('Error marking as voted: '+err);
+                    }
                 });
-                return res.send('<div>Vote registered successfully</div><a href=\'/\'>Home</a>');
+                return res.send(templateBegin+'<div>Vote registered successfully</div><a href=\'/\'>Home</a>'+templateEnd);
             });
         });
     });
@@ -533,7 +546,7 @@ database.onConnect(async ()=>{
                 blockChain.replaceWithLongestChain(longestChain);
                 blockChain.curr_votes = curr_votes;
                 return res.json({
-                    message: "Chain updated",
+                    message: "Chain invalid, Running Consensus...\nChain replaced with the longest chain",
                     chain: longestChain
                 });
             }
