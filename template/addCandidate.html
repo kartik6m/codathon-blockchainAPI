@@ -12,21 +12,24 @@
 
 <body>
   <div class='container'>
-    <div class="jumbotron">
-      <h2>Blockchain based voting</h2>
+    <!-- <div class="jumbotron"> -->
+    <div class="jumbotron jumbotron-image" style="background-image: url(https://news.uchicago.edu/sites/default/files/styles/full_width/public/images/2019-07/Mobile%20voting.jpg?itok=oezMDWp-);">
+      <h2>Blockchain based e-Voting System</h2>
     </div>
     <div class="candidate-form">
       <form id="vote" action="/add-candidate/broadcast" method="post"
         onSubmit="event.preventDefault(); validateMyForm();">
         <p>Enter candidate information:</p>
         <div>
-          <input type="text" id="candidate" name="candidate" placeholder="Candidate Name">
+          <input type="text" id="candidate" name="candidate" class="form-control" placeholder="Candidate Name" style="width:auto">
         </div>
         <div>
-          <input type="text" id="team" name="team" placeholder="Candidate Team">
+          <input type="text" id="team" name="team" class="form-control" placeholder="Candidate Team" style="width:auto">
         </div>
-        <input type="submit" value="Add">
+
+        <button type="submit" value="Add" class="btn btn-primary">Add</button>
       </form>
+      <a href='/'><h4>Home</h4></a>
     </div>
 
     <script type="text/javascript">
