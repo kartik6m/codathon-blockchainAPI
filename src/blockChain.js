@@ -74,7 +74,7 @@ class BlockChain {
 
     //Iterates over the whole chain, and calculates the summary of election i.e. vote counts for each candidate and each team.
     generateSummary(chain = this.chain) {
-        var teamSummary = {};
+        /*var teamSummary = {};
         var candidateSummary = {};
         for (let i = 0; i < chain.length; i++) {
             for (let j = 0; j < chain[i].votes.length; j++) {
@@ -92,8 +92,21 @@ class BlockChain {
                     candidateSummary[vote.candidate] = 1;
                 }
             }
+        }*/
+
+        var summary={};
+        for(let i=0;i<chain.length;i++){
+            for(let j=0;j<chain[i].votes.length;j++){
+                let vote = chain[i].votes[j];
+                if(summary[vote.candidate]){
+                    summary[vote.candidate].votes += 1;
+                }
+                else{
+                    summary[vote.candidate] = {team: vote.team, votes: 1};
+                }
+            }
         }
-        return { candidate: candidateSummary, team: teamSummary };
+        return summary;
     }
 
     //Adds the URL of a new node to the addressbook of this node.
