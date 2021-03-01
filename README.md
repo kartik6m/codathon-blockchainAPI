@@ -10,12 +10,12 @@
 	
     - Candidate can be added
     - Vote can be casted once (available candidates shown dynamically)
-    - Summary can viewed
+    - Summary can be viewed
 
 - ### From user dashboard
 
     - Vote can be casted once (available candidates shown dynamically)
-    - Summary can viewed
+    - Summary can be viewed
 
 ## Technology Used:
 
